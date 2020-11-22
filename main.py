@@ -24,6 +24,36 @@ baseDGValue = 0
 
 probFail = 0.8 #0.8 selon l'énoncé
 
+
+"""
+#move correspondant plus à ce qu'a fait leslie en retro-ingeneerant son code
+def move(vchoice) :
+  global agentPos
+
+  targetPos = agentPos
+
+  if vchoice == "haut":
+    targetPos = (agentPos[0], agentPos[1] + 1)
+  if vchoice == "bas":
+    targetPos = (agentPos[0], agentPos[1] - 1)
+  if vchoice == "gauche":
+    targetPos = (agentPos[0] - 1, agentPos[1])
+  if vchoice == "droite":
+    targetPos = (agentPos[0] + 1, agentPos[1])
+  if random.random() < probFail:
+    r = random.random()
+    if r < 0.25 :
+      targetPos = (targetPos[0] + 1, targetPos[1])
+    if r >= 0.25 and r < 0.5 :
+      targetPos = (targetPos[0] - 1, targetPos[1])
+    if r >= 0.5 and r < 0.75 :
+      targetPos = (targetPos[0], targetPos[1] + 1)
+    if r >= 0.75 :
+      targetPos = (targetPos[0], targetPos[1] - 1)
+  if targetPos[0] < gridSize[0] and targetPos[1] < gridSize[1] and targetPos[0] >= 0 and targetPos[1] >= 0:
+    agentPos = targetPos
+"""
+
 def move(vchoice) :
   global agentPos
 
@@ -65,9 +95,9 @@ rew = 0
 S_tm1 = ''
 #dictionnaire des couples états action et leurs valeurs
 Qdict = {}
-alpha = 0.9
-gamma = 0.95
-T = 0.1
+alpha = 0.9 #0.9  0.1 sur le Qlearning dans le code lisp
+gamma = 0.95 #0.95 0.9 sur le Qlearning dans le code lisp
+T = 0.1 #0.1
 
 def getMaxFromQinQTable(Q) :
   qval = [Qdict.get((q, a), 0) for (q, a) in Qdict.keys() if Q == q]
@@ -262,7 +292,7 @@ if __name__ == '__main__':
   rewVal = 1
   #random.seed(1234)
   print("--------------------------- Q -------------------------")
-  dataQ = main("Q", nrun, nticks, rewVal, True, False, False, show= True)
+  dataQ = main("Q", nrun, nticks, rewVal, True, False, False)
 
   print("--------------------------- DG -------------------------")
   dataDG = main("DG", nrun, nticks, rewVal, True, False, False)

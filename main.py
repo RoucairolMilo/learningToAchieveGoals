@@ -96,7 +96,7 @@ S_tm1 = ''
 #dictionnaire des couples états action et leurs valeurs
 Qdict = {}
 alpha = 0.9 #0.9  0.1 sur le Qlearning dans le code lisp
-gamma = 0.95 #0.95 0.9 sur le Qlearning dans le code lisp
+gamma = 0.9 #0.95 0.9 sur le Qlearning dans le code lisp
 T = 0.1 #0.1
 
 def getMaxFromQinQTable(Q) :
@@ -297,6 +297,7 @@ if __name__ == '__main__':
   print("--------------------------- DG -------------------------")
   dataDG = main("DG", nrun, nticks, rewVal, True, False, False)
 
+
   """
   plt.hist([dataQ, dataDG], bins=100, histtype = 'step', label = ['Q', 'DG'])
   plt.legend()
@@ -318,6 +319,9 @@ if __name__ == '__main__':
       if e >= i * nticks/nbucket and e < (i + 1) * nticks/nbucket:
         count += 1
     finalDG.append(count/(nrun*nticks/nbucket))
+
+  print("mean Q : " + str(np.mean(finalQ)))
+  print("mean DG : " + str(np.mean(finalDG)))
 
   plt.plot(finalQ, label = 'Q')
   plt.plot(finalDG, label = 'DG')

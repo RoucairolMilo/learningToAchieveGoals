@@ -188,28 +188,45 @@ def relaxation() :
   global DGTable
   for s1x in range(gridSize[0]) :
     for s1y in range(gridSize[1]) :
+      s1 = (s1x, s1y)
       for s2x in range(gridSize[0]):
         for s2y in range(gridSize[1]):
+          s2 = (s2x, s2y)
           for six in range(gridSize[0]):
             for siy in range(gridSize[1]):
-              for a in A :
-                sem.acquire()
+              si = (six, siy)
+              if s1 != s2 and s1!= si and si != s2 :
+                for a in A :
+                  sem.acquire()
 
-                temp = DGTable.get(((s1x,s1y), a, (s2x,s2y)), baseDGValue)
+                  temp = DGTable.get((s1, a, s2), baseDGValue)
+                  """
+                  DGTable[(s1, a, s2)] = min(temp,
+                                                           DGTable.get((s1, a, si), baseDGValue)
+                                                           + DGTable.get((si, minDG(si, s2), s2), baseDGValue)
+                                                           )
+                  """
+                  if(DGTable.get((s1, a, si), baseDGValue) + DGTable.get((si, minDG(si, s2), s2), baseDGValue) < temp) :
+                    #TODO : ça chie ici
+                    #print("la relaxation trouve des trucs !")
 
-                """
-                DGTable[((s1x,s1y), a, (s2x,s2y))] = min(temp,
-                                                         DGTable.get(((s1x, s1y), a, (six, siy)), baseDGValue)
-                                                         + DGTable.get(((six, siy), minDG((six, siy), (s2x, s2y)), (s2x, s2y)), baseDGValue)
-                                                         )
-                """
+                    #alors on dirait que sa formule de relaxation est pas très bien
+                    #explication :
+                    #DG(s1, a, s2) = min(DG(s1, a, s2), DG(s1, a, si) + min DG(si, a', s2))
+                    #problème : ils sont initialisés à 0 par défaut, donc la relaxation est contreproductice, il faudrait les initiliser en fonction de leur distance ?
+                    #c'est pas compliqué mais est-ce que c'est ce qu'elle a fait ?
 
-                if(DGTable.get(((s1x, s1y), a, (six, siy)), baseDGValue) + DGTable.get(((six, siy), minDG((six, siy), (s2x, s2y)), (s2x, s2y)), baseDGValue) < temp) :
-                  #print("la relaxation trouve des trucs !") #la relaxation marche on dirait bien
-                  DGTable[((s1x, s1y), a, (s2x, s2y))] = DGTable.get(((s1x, s1y), a, (six, siy)), baseDGValue)+ DGTable.get(((six, siy), minDG((six, siy), (s2x, s2y)), (s2x, s2y)),baseDGValue)
+                    #on est censé apprendre, je pense qu'il ne faut pas utiliser une heuristique pour initialiser la grille
+
+                    #dans ce cas on ne devrait regarder que les valeurs présentes dans la table et ne pas initiliser
+
+                    print(str(s1) + " " + str(si) + " " +str(s2))
+                    print(str(DGTable.get((s1, a, si), baseDGValue) + DGTable.get((si, minDG(si, s2), s2), baseDGValue)) + "  <   " +  str(temp))
+
+                    DGTable[(s1, a, s2)] = DGTable.get((s1, a, si), baseDGValue)+ DGTable.get((si, minDG(si, s2), s2),baseDGValue)
 
 
-                sem.release()
+                  sem.release()
 
   #une fois fini, on recommence
   print("fin de relaxation")
@@ -336,7 +353,7 @@ if __name__ == '__main__':
 
   print("--------------------------- DG -------------------------")
   #dataDG = main("DG", nrun, nticks, rewVal, agentBouge=True, rewardBouge=False, useAllGoalUpdate=False, useRelaxation=False)
-  dataDG = main("DG", nrun, nticks, rewVal, agentBouge=True, rewardBouge=True, useAllGoalUpdate=True, useRelaxation=True) #test de la relaxation
+  dataDG = main("DG", nrun, nticks, rewVal, agentBouge=True, rewardBouge=True, useAllGoalUpdate=False, useRelaxation=True) #test de la relaxation
 
   """
   plt.hist([dataQ, dataDG], bins=100, histtype = 'step', label = ['Q', 'DG'])

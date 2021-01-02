@@ -49,7 +49,7 @@ class dirtyPlot :
           decalx = -0.25
         if (choice == "droite"):
           decalx = 0.25
-
+        """        
         if text.get((state[0], state[1], choice), 0) != 0:
           text.get((state[0], state[1], choice), 0).set_visible(False)
         if method == 'DG' :
@@ -58,5 +58,20 @@ class dirtyPlot :
         if method == 'Q' :
           tex = plt.text(state[1] + decaly - 0.2, state[0] + decalx + 0.2, str(round(Qdict.get((state, choice), 0), rounding)), color="red", fontsize=8)
           text[(state[0], state[1], choice)] = tex
+        """
+
+        if text.get((state[0], state[1], choice), 0) != 0:
+            text.get((state[0], state[1], choice), 0).set_text(str(round(DGTable.get((state, choice, rewardPos), 0), rounding)))
+        else :
+            if method == 'DG':
+                tex = plt.text(state[1] + decaly - 0.2, state[0] + decalx + 0.2,
+                               str(round(DGTable.get((state, choice, rewardPos), 0), rounding)), color="red",
+                               fontsize=8)
+                text[(state[0], state[1], choice)] = tex
+            if method == 'Q':
+                tex = plt.text(state[1] + decaly - 0.2, state[0] + decalx + 0.2,
+                               str(round(Qdict.get((state, choice), 0), rounding)), color="red", fontsize=8)
+                text[(state[0], state[1], choice)] = tex
+
         plt.draw()
         plt.pause(0.01)

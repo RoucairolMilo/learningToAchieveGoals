@@ -10,7 +10,6 @@ import threading
 
 sem = threading.Semaphore()
 
-
 gridSize = [10, 10]
 A = ["haut", "bas", "gauche", "droite"]
 
@@ -138,10 +137,22 @@ def initDGTable() :
       for s2 in range(gridSize[1]) :
         DGTable[((s1, s2), a, (s1, s2))] = 0
 
-def updateDG() :
-    sem.acquire()
-    DGTable[(S_tm1, choice_tm1, rewardPos)] = (1-alpha) * DGTable.get((S_tm1, choice_tm1, rewardPos), baseDGValue) + alpha*(1 + DGTable.get((agentPos, minDG(agentPos, rewardPos), rewardPos), baseDGValue))
-    sem.release()
+def updateDG(UAGU = False) :
+    if UAGU :
+      for x in range(gridSize[0]):
+        for y in range(gridSize[1]):
+          anyGoal = (x,y)
+          sem.acquire()
+          DGTable[(S_tm1, choice_tm1, anyGoal)] = (1 - alpha) * DGTable.get((S_tm1, choice_tm1, anyGoal),
+                                                                              baseDGValue) + alpha * (1 + DGTable.get(
+            (agentPos, minDG(agentPos, anyGoal), anyGoal), baseDGValue))
+          sem.release()
+    else :
+      sem.acquire()
+      DGTable[(S_tm1, choice_tm1, rewardPos)] = (1 - alpha) * DGTable.get((S_tm1, choice_tm1, rewardPos),
+                                                                          baseDGValue) + alpha * (1 + DGTable.get(
+        (agentPos, minDG(agentPos, rewardPos), rewardPos), baseDGValue))
+      sem.release()
 
 def minDG(S, G) :
   #utiliser au sein d'un passage sous sémaphore !
@@ -173,13 +184,36 @@ def chooseDG() :
   sem.release()
   return random.choices(A, weights = softmax(x))[0]
 
-
 def relaxation() :
-  for aaa in range(1000) :
-    for bbb in range(1000) :
-      sem.acquire()
-      iii = 1 #print((aaa, bbb))
-      sem.release()
+  global DGTable
+  for s1x in range(gridSize[0]) :
+    for s1y in range(gridSize[1]) :
+      for s2x in range(gridSize[0]):
+        for s2y in range(gridSize[1]):
+          for six in range(gridSize[0]):
+            for siy in range(gridSize[1]):
+              for a in A :
+                sem.acquire()
+
+                temp = DGTable.get(((s1x,s1y), a, (s2x,s2y)), baseDGValue)
+
+                """
+                DGTable[((s1x,s1y), a, (s2x,s2y))] = min(temp,
+                                                         DGTable.get(((s1x, s1y), a, (six, siy)), baseDGValue)
+                                                         + DGTable.get(((six, siy), minDG((six, siy), (s2x, s2y)), (s2x, s2y)), baseDGValue)
+                                                         )
+                """
+
+                if(DGTable.get(((s1x, s1y), a, (six, siy)), baseDGValue) + DGTable.get(((six, siy), minDG((six, siy), (s2x, s2y)), (s2x, s2y)), baseDGValue) < temp) :
+                  #print("la relaxation trouve des trucs !") #la relaxation marche on dirait bien
+                  DGTable[((s1x, s1y), a, (s2x, s2y))] = DGTable.get(((s1x, s1y), a, (six, siy)), baseDGValue)+ DGTable.get(((six, siy), minDG((six, siy), (s2x, s2y)), (s2x, s2y)),baseDGValue)
+
+
+                sem.release()
+
+  #une fois fini, on recommence
+  print("fin de relaxation")
+  relaxation()
 
 
 
@@ -187,7 +221,7 @@ def relaxation() :
 # Main
 #-----------------------------------------------------------------------------------------------------------
 
-def main(method, nbRuns, nbticks, rewVal, agentBouge, rewardBouge, useAllGoalUpdate, show = False):
+def main(method, nbRuns, nbticks, rewVal, agentBouge = False, rewardBouge = False, useAllGoalUpdate = False, useRelaxation= False, show = False):
   global agentPos
   global rewardPos
   global Qdict
@@ -213,11 +247,13 @@ def main(method, nbRuns, nbticks, rewVal, agentBouge, rewardBouge, useAllGoalUpd
     print("Run " + str(run))
 
     Qdict = {}
+
+    sem.acquire()
     DGTable = {}
     initDGTable()
+    sem.release()
 
-    if(useAllGoalUpdate and method == "DG") :
-      print("utilise allUpdate")
+    if(useRelaxation and method == "DG") :
       t = threading.Thread(target = relaxation)
       t.start()
 
@@ -245,12 +281,11 @@ def main(method, nbRuns, nbticks, rewVal, agentBouge, rewardBouge, useAllGoalUpd
         choice = chooseQL()
       if method == 'DG' :
         if (ite != 0):
-          updateDG()
+          updateDG(UAGU= useAllGoalUpdate)
         choice = chooseDG()
 
       if show == True and tick >= 9000:
         dp.update(gridSize, S_tm1, rewardPos, choice_tm1, DGTable, Qdict, rew, method, 1)
-
 
       if (agentPos == rewardPos):
         if (agentBouge):
@@ -277,8 +312,12 @@ def main(method, nbRuns, nbticks, rewVal, agentBouge, rewardBouge, useAllGoalUpd
 
     data.append(runData)
 
-    if useAllGoalUpdate :
-      t.join()
+    """
+     if useRelaxation :
+      print(testMT)
+      #t.join() #bug ici, pourquoi je faisai ça déjà ?
+    """
+
     print("number of goals attained : " + str(goaled))
     #print(np.mean(trialDuration))
   return meanData
@@ -292,11 +331,12 @@ if __name__ == '__main__':
   rewVal = 1
   #random.seed(1234)
   print("--------------------------- Q -------------------------")
-  dataQ = main("Q", nrun, nticks, rewVal, True, False, False)
+  #dataQ  = main("Q", nrun, nticks, rewVal, agentBouge=True, rewardBouge=False)
+  dataQ  = main("Q", nrun, nticks, rewVal, agentBouge=True, rewardBouge=True)
 
   print("--------------------------- DG -------------------------")
-  dataDG = main("DG", nrun, nticks, rewVal, True, False, False)
-
+  #dataDG = main("DG", nrun, nticks, rewVal, agentBouge=True, rewardBouge=False, useAllGoalUpdate=False, useRelaxation=False)
+  dataDG = main("DG", nrun, nticks, rewVal, agentBouge=True, rewardBouge=True, useAllGoalUpdate=True, useRelaxation=True) #test de la relaxation
 
   """
   plt.hist([dataQ, dataDG], bins=100, histtype = 'step', label = ['Q', 'DG'])

@@ -192,40 +192,30 @@ def relaxation() :
       for s2x in range(gridSize[0]):
         for s2y in range(gridSize[1]):
           s2 = (s2x, s2y)
-          sem.acquire()
+          #sem.acquire() #400
           for six in range(gridSize[0]):
             for siy in range(gridSize[1]):
               si = (six, siy)
-              #sem.acquire()
+              #sem.acquire() #4
               if s1 != s2 and s1!= si and si != s2 :
                 for a in A :
-                  #sem.acquire()
-
+                  sem.acquire() #1
                   temp = DGTable.get((s1, a, s2), baseDGValue)
-                  """
-                  DGTable[(s1, a, s2)] = min(temp,
-                                                           DGTable.get((s1, a, si), baseDGValue)
-                                                           + DGTable.get((si, minDG(si, s2), s2), baseDGValue)
-                                                           )
-                  """
                   mem1 = DGTable.get((s1, a, si), baseDGValue) + DGTable.get((si, minDG(si, s2), s2), baseDGValue)
                   if(mem1 < temp) :
                     #print("la relaxation trouve des trucs !")
-
                     #print(str(s1) + " " + str(si) + " " +str(s2))
                     #print(str(mem1) + "  <  " + str(temp))
 
                     DGTable[(s1, a, s2)] = mem1
 
-
-                  #sem.release()
-
                   t = threading.currentThread()
                   if(not getattr(t, "do_run", True)) :
                     sem.release()
                     return
-              #sem.release()
-          sem.release()
+                  sem.release() #1
+              #sem.release() # 4
+          #sem.release() # 400
 
   #une fois fini, on recommence
   print("fin de relaxation")

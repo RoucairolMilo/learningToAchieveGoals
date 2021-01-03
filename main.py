@@ -195,9 +195,10 @@ def relaxation() :
           for six in range(gridSize[0]):
             for siy in range(gridSize[1]):
               si = (six, siy)
+              sem.acquire
               if s1 != s2 and s1!= si and si != s2 :
                 for a in A :
-                  sem.acquire()
+                  #sem.acquire()
 
                   temp = DGTable.get((s1, a, s2), baseDGValue)
                   """
@@ -208,17 +209,7 @@ def relaxation() :
                   """
                   if(DGTable.get((s1, a, si), baseDGValue) + DGTable.get((si, minDG(si, s2), s2), baseDGValue) < temp) :
                     #TODO : ça chie ici
-                    #print("la relaxation trouve des trucs !")
-
-                    #alors on dirait que sa formule de relaxation est pas très bien
-                    #explication :
-                    #DG(s1, a, s2) = min(DG(s1, a, s2), DG(s1, a, si) + min DG(si, a', s2))
-                    #problème : ils sont initialisés à 0 par défaut, donc la relaxation est contreproductice, il faudrait les initiliser en fonction de leur distance ?
-                    #c'est pas compliqué mais est-ce que c'est ce qu'elle a fait ?
-
-                    #on est censé apprendre, je pense qu'il ne faut pas utiliser une heuristique pour initialiser la grille
-
-                    #dans ce cas on ne devrait regarder que les valeurs présentes dans la table et ne pas initiliser
+                    print("la relaxation trouve des trucs !")
 
                     print(str(s1) + " " + str(si) + " " +str(s2))
                     print(str(DGTable.get((s1, a, si), baseDGValue) + DGTable.get((si, minDG(si, s2), s2), baseDGValue)) + "  <   " +  str(temp))
@@ -226,7 +217,13 @@ def relaxation() :
                     DGTable[(s1, a, s2)] = DGTable.get((s1, a, si), baseDGValue)+ DGTable.get((si, minDG(si, s2), s2),baseDGValue)
 
 
-                  sem.release()
+                  #sem.release()
+
+                  t = threading.currentThread()
+                  if(not getattr(t, "do_run", True)) :
+                    sem.release()
+                    return
+              sem.release()
 
   #une fois fini, on recommence
   print("fin de relaxation")
@@ -329,11 +326,9 @@ def main(method, nbRuns, nbticks, rewVal, agentBouge = False, rewardBouge = Fals
 
     data.append(runData)
 
-    """
-     if useRelaxation :
-      print(testMT)
-      #t.join() #bug ici, pourquoi je faisai ça déjà ?
-    """
+    if useRelaxation :
+      t.do_run = False
+
 
     print("number of goals attained : " + str(goaled))
     #print(np.mean(trialDuration))
@@ -353,14 +348,7 @@ if __name__ == '__main__':
 
   print("--------------------------- DG -------------------------")
   #dataDG = main("DG", nrun, nticks, rewVal, agentBouge=True, rewardBouge=False, useAllGoalUpdate=False, useRelaxation=False)
-  dataDG = main("DG", nrun, nticks, rewVal, agentBouge=True, rewardBouge=True, useAllGoalUpdate=False, useRelaxation=True) #test de la relaxation
-
-  """
-  plt.hist([dataQ, dataDG], bins=100, histtype = 'step', label = ['Q', 'DG'])
-  plt.legend()
-  plt.show()
-  #ça ne marche pas, je fais mon traitement moi même
-  """
+  dataDG = main("DG", nrun, nticks, rewVal, agentBouge=True, rewardBouge=True, useAllGoalUpdate=True, useRelaxation=True) #test de la relaxation
 
   finalQ = []
   finalDG = []

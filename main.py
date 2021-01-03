@@ -8,7 +8,7 @@ import dirtyPlot
 import threading
 
 
-sem = threading.Semaphore()
+sem = threading.BoundedSemaphore()
 
 gridSize = [10, 10]
 A = ["haut", "bas", "gauche", "droite"]
@@ -192,10 +192,11 @@ def relaxation() :
       for s2x in range(gridSize[0]):
         for s2y in range(gridSize[1]):
           s2 = (s2x, s2y)
+          sem.acquire()
           for six in range(gridSize[0]):
             for siy in range(gridSize[1]):
               si = (six, siy)
-              sem.acquire
+              #sem.acquire()
               if s1 != s2 and s1!= si and si != s2 :
                 for a in A :
                   #sem.acquire()
@@ -207,14 +208,14 @@ def relaxation() :
                                                            + DGTable.get((si, minDG(si, s2), s2), baseDGValue)
                                                            )
                   """
-                  if(DGTable.get((s1, a, si), baseDGValue) + DGTable.get((si, minDG(si, s2), s2), baseDGValue) < temp) :
-                    #TODO : ça chie ici
-                    print("la relaxation trouve des trucs !")
+                  mem1 = DGTable.get((s1, a, si), baseDGValue) + DGTable.get((si, minDG(si, s2), s2), baseDGValue)
+                  if(mem1 < temp) :
+                    #print("la relaxation trouve des trucs !")
 
-                    print(str(s1) + " " + str(si) + " " +str(s2))
-                    print(str(DGTable.get((s1, a, si), baseDGValue) + DGTable.get((si, minDG(si, s2), s2), baseDGValue)) + "  <   " +  str(temp))
+                    #print(str(s1) + " " + str(si) + " " +str(s2))
+                    #print(str(mem1) + "  <  " + str(temp))
 
-                    DGTable[(s1, a, s2)] = DGTable.get((s1, a, si), baseDGValue)+ DGTable.get((si, minDG(si, s2), s2),baseDGValue)
+                    DGTable[(s1, a, s2)] = mem1
 
 
                   #sem.release()
@@ -223,7 +224,8 @@ def relaxation() :
                   if(not getattr(t, "do_run", True)) :
                     sem.release()
                     return
-              sem.release()
+              #sem.release()
+          sem.release()
 
   #une fois fini, on recommence
   print("fin de relaxation")
@@ -235,7 +237,7 @@ def relaxation() :
 # Main
 #-----------------------------------------------------------------------------------------------------------
 
-def main(method, nbRuns, nbticks, rewVal, agentBouge = False, rewardBouge = False, useAllGoalUpdate = False, useRelaxation= False, show = False):
+def launch(method, nbRuns, nbticks, rewVal, agentBouge = False, rewardBouge = False, useAllGoalUpdate = False, useRelaxation= False, show = False):
   global agentPos
   global rewardPos
   global Qdict
@@ -336,19 +338,18 @@ def main(method, nbRuns, nbticks, rewVal, agentBouge = False, rewardBouge = Fals
 #--------------------------------------
 
 if __name__ == '__main__':
-
   nrun = 20
   nbucket = 100
   nticks = 10000
   rewVal = 1
   #random.seed(1234)
   print("--------------------------- Q -------------------------")
-  #dataQ  = main("Q", nrun, nticks, rewVal, agentBouge=True, rewardBouge=False)
-  dataQ  = main("Q", nrun, nticks, rewVal, agentBouge=True, rewardBouge=True)
+  #dataQ  = launch("Q", nrun, nticks, rewVal, agentBouge=True, rewardBouge=False)
+  dataQ  = launch("Q", nrun, nticks, rewVal, agentBouge=True, rewardBouge=True)
 
   print("--------------------------- DG -------------------------")
-  #dataDG = main("DG", nrun, nticks, rewVal, agentBouge=True, rewardBouge=False, useAllGoalUpdate=False, useRelaxation=False)
-  dataDG = main("DG", nrun, nticks, rewVal, agentBouge=True, rewardBouge=True, useAllGoalUpdate=True, useRelaxation=True) #test de la relaxation
+  #dataDG = launch("DG", nrun, nticks, rewVal, agentBouge=True, rewardBouge=False, useAllGoalUpdate=False, useRelaxation=False)
+  dataDG = launch("DG", nrun, nticks, rewVal, agentBouge=True, rewardBouge=True, useAllGoalUpdate=True, useRelaxation=True) #test de la relaxation
 
   finalQ = []
   finalDG = []

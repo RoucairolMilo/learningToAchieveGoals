@@ -95,8 +95,9 @@ rew = 0
 S_tm1 = ''
 #dictionnaire des couples états action et leurs valeurs
 Qdict = {}
-alpha = 0.4 #0.9  0.1 sur le Qlearning dans le code lisp
-gamma = 0.995 #0.95 0.9 sur le Qlearning dans le code lisp
+#marche avec alpha=0.4 et gamma=0.995 étrangement
+alpha = 0.9  #0.9 dans le papier
+gamma = 0.9 #0.95 0.9 sur le Qlearning dans le code lisp
 T = 0.1 #0.1
 
 def getMaxFromQinQTable(Q) :
@@ -143,17 +144,13 @@ def updateDG(UAGU = False) :
       for x in range(gridSize[0]):
         for y in range(gridSize[1]):
           anyGoal = (x,y)
-          sem.acquire()
           DGTable[(S_tm1, choice_tm1, anyGoal)] = (1 - alpha) * DGTable.get((S_tm1, choice_tm1, anyGoal),
                                                                               baseDGValue) + alpha * (1 + DGTable.get(
             (agentPos, minDG(agentPos, anyGoal), anyGoal), baseDGValue))
-          sem.release()
     else :
-      sem.acquire()
       DGTable[(S_tm1, choice_tm1, rewardPos)] = (1 - alpha) * DGTable.get((S_tm1, choice_tm1, rewardPos),
                                                                           baseDGValue) + alpha * (1 + DGTable.get(
         (agentPos, minDG(agentPos, rewardPos), rewardPos), baseDGValue))
-      sem.release()
 
 def minDG(S, G) :
   #utiliser au sein d'un passage sous sémaphore !
@@ -180,9 +177,7 @@ def minDG(S, G) :
   sem.release()"""
 
 def chooseDG() :
-  sem.acquire()
   x = [-DGTable.get((agentPos, a, rewardPos), baseDGValue)/T for a in A]
-  sem.release()
   return random.choices(A, weights = softmax(x))[0]
 
 def relaxation() :
@@ -250,7 +245,7 @@ def random_relax():
 # Main
 #-----------------------------------------------------------------------------------------------------------
 
-def launch(method, nbRuns, nbticks, rewVal, agentBouge = False, rewardBouge = False, useAllGoalUpdate = False, useRelaxation= False, show = False):
+def launch(method, nbRuns, nbticks, rewVal, agentBouge = False, rewardBouge = False, useAllGoalUpdate = False, relaxMode = 'no', show = False):
   global agentPos
   global rewardPos
   global Qdict
@@ -277,14 +272,13 @@ def launch(method, nbRuns, nbticks, rewVal, agentBouge = False, rewardBouge = Fa
 
     Qdict = {}
 
-    sem.acquire()
     DGTable = {}
     initDGTable()
-    sem.release()
 
-    """if(useRelaxation and method == "DG") :
+    if(relaxMode == 'fm' and method == "DG") :
+      sem.acquire()
       t = threading.Thread(target = relaxation)
-      t.start()"""
+      t.start()
 
     goaled = 0
     tick = 0
@@ -311,7 +305,11 @@ def launch(method, nbRuns, nbticks, rewVal, agentBouge = False, rewardBouge = Fa
       if method == 'DG' :
         if (ite != 0):
           updateDG(UAGU= useAllGoalUpdate)
-          #random_relax()
+          if relaxMode == "rd" :
+            random_relax()
+          if relaxMode == "fm" :
+            sem.release()
+            sem.acquire()
         choice = chooseDG()
 
       if show == True and tick >= 9000:
@@ -342,8 +340,9 @@ def launch(method, nbRuns, nbticks, rewVal, agentBouge = False, rewardBouge = Fa
 
     data.append(runData)
 
-    """if useRelaxation :
-      t.do_run = False"""
+    if relaxMode == 'fm' :
+      sem.release()
+      t.do_run = False
 
 
     print("number of goals attained : " + str(goaled))
@@ -363,7 +362,7 @@ if __name__ == '__main__':
 
   print("--------------------------- DG -------------------------")
   #dataDG = launch("DG", nrun, nticks, rewVal, agentBouge=True, rewardBouge=False, useAllGoalUpdate=False, useRelaxation=False)
-  dataDG = launch("DG", nrun, nticks, rewVal, agentBouge=True, rewardBouge=True, useAllGoalUpdate=True, useRelaxation=True) #test de la relaxation
+  dataDG = launch("DG", nrun, nticks, rewVal, agentBouge=True, rewardBouge=True, useAllGoalUpdate=True, relaxMode = 'rd') #test de la relaxation
 
   finalQ = []
   finalDG = []

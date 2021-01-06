@@ -19,10 +19,11 @@ agentStartPos = agentPos
 rewardPos = (5, 5)
 rewardStartPos = rewardPos
 
-baseDGValue = 0
+baseDGValue = 10
 
 probFail = 0.8 #0.8 selon l'énoncé
 
+nb_relax = 100
 
 """
 #move correspondant plus à ce qu'a fait leslie en retro-ingeneerant son code
@@ -94,8 +95,8 @@ rew = 0
 S_tm1 = ''
 #dictionnaire des couples états action et leurs valeurs
 Qdict = {}
-alpha = 0.9 #0.9  0.1 sur le Qlearning dans le code lisp
-gamma = 0.9 #0.95 0.9 sur le Qlearning dans le code lisp
+alpha = 0.4 #0.9  0.1 sur le Qlearning dans le code lisp
+gamma = 0.995 #0.95 0.9 sur le Qlearning dans le code lisp
 T = 0.1 #0.1
 
 def getMaxFromQinQTable(Q) :
@@ -216,10 +217,32 @@ def relaxation() :
                   sem.release() #1
               #sem.release() # 4
           #sem.release() # 400
-
   #une fois fini, on recommence
   print("fin de relaxation")
   relaxation()
+
+def random_relax():
+  global DGTable
+  for i in range(nb_relax):
+    s1x = random.randrange(gridSize[0])
+    s2x = random.randrange(gridSize[0])
+    s3x = random.randrange(gridSize[0])
+    s1y = random.randrange(gridSize[1])
+    s2y = random.randrange(gridSize[1])
+    s3y = random.randrange(gridSize[1])
+    s1 = (s1x, s1y)
+    s2 = (s2x, s2y)
+    s3 = (s3x, s3y)
+    if s1 != s2 and s1 != s3 and s3 != s2:
+      for a in A:
+        temp = DGTable.get((s1, a, s2), baseDGValue)
+        mem1 = DGTable.get((s1, a, s3), baseDGValue) + DGTable.get((s3, minDG(s3, s2), s2), baseDGValue)
+        if (mem1 < temp):
+          # print("la relaxation trouve des trucs !")
+          # print(str(s1) + " " + str(si) + " " +str(s2))
+          # print(str(mem1) + "  <  " + str(temp))
+
+          DGTable[(s1, a, s2)] = mem1
 
 
 
@@ -259,9 +282,9 @@ def launch(method, nbRuns, nbticks, rewVal, agentBouge = False, rewardBouge = Fa
     initDGTable()
     sem.release()
 
-    if(useRelaxation and method == "DG") :
+    """if(useRelaxation and method == "DG") :
       t = threading.Thread(target = relaxation)
-      t.start()
+      t.start()"""
 
     goaled = 0
     tick = 0
@@ -288,6 +311,7 @@ def launch(method, nbRuns, nbticks, rewVal, agentBouge = False, rewardBouge = Fa
       if method == 'DG' :
         if (ite != 0):
           updateDG(UAGU= useAllGoalUpdate)
+          #random_relax()
         choice = chooseDG()
 
       if show == True and tick >= 9000:
@@ -318,8 +342,8 @@ def launch(method, nbRuns, nbticks, rewVal, agentBouge = False, rewardBouge = Fa
 
     data.append(runData)
 
-    if useRelaxation :
-      t.do_run = False
+    """if useRelaxation :
+      t.do_run = False"""
 
 
     print("number of goals attained : " + str(goaled))

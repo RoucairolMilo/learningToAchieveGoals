@@ -19,7 +19,7 @@ agentStartPos = agentPos
 rewardPos = (5, 5)
 rewardStartPos = rewardPos
 
-baseDGValue = 10
+baseDGValue = 50
 
 probFail = 0.8 #0.8 selon l'énoncé
 

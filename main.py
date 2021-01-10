@@ -26,6 +26,11 @@ probFail = 0.8 #0.8 selon l'énoncé
 nb_relax = 100
 
 def move(vchoice) :
+  """
+  bouge l'agent sur la grille suivant le choix
+  :param vchoice: élément de A
+  :return:
+  """
   global agentPos
 
   targetPos = agentPos
@@ -105,6 +110,10 @@ def chooseQL() :
 DGTable = {}
 
 def initDGTable() :
+  """
+  initialise la DG-table à 0 pour tout trio où l'état est l'objectif (nécessaire)
+  :return:
+  """
   for a in A :
     for s1 in range(gridSize[0]) :
       for s2 in range(gridSize[1]) :
@@ -124,34 +133,28 @@ def updateDG(UAGU = False) :
         (agentPos, minDG(agentPos, rewardPos), rewardPos), baseDGValue))
 
 def minDG(S, G) :
-  #utiliser au sein d'un passage sous sémaphore !
+  """
+  :param S: etat courant
+  :param G: objectif
+  :return: l'action à faire qui a le plus de chances d'amener à S selon la DG-table
+  """
   min = random.choice(A)
   for a in A :
     if DGTable.get((S, a, G), baseDGValue) < DGTable.get((S, min, G), baseDGValue) :
       min = a
   return min
 
-"""def chooseDG() :
-  sum = 0
-  sem.acquire()
-  max = np.max([DGTable.get((agentPos, a, rewardPos), baseDGValue) for a in A])
-  sumBoltz = np.sum([math.exp((max - DGTable.get((agentPos, a, rewardPos), baseDGValue))/T) for a in A])
-  rand = random.random()
-
-  for a in A :
-    if rand < sum + math.exp((max -DGTable.get((agentPos, a, rewardPos), baseDGValue))/T)/sumBoltz :
-      sem.release()
-      return a
-    else :
-      sum += math.exp((max-DGTable.get((agentPos, a, rewardPos), baseDGValue))/T)/sumBoltz
-  print("erreur, devrait pas y avoir ce message")
-  sem.release()"""
-
 def chooseDG() :
   x = [-DGTable.get((agentPos, a, rewardPos), baseDGValue)/T for a in A]
   return random.choices(A, weights = softmax(x))[0]
 
 def relaxation() :
+  """
+  applique la relaxation sur tous les trio de valeurs de la DG table méthodiquement
+  changer les sémaphores de place pour augmenter ou baisser la fréquence
+
+  :return:
+  """
   global DGTable
   for s1x in range(gridSize[0]) :
     for s1y in range(gridSize[1]) :
@@ -188,6 +191,10 @@ def relaxation() :
   relaxation()
 
 def random_relax():
+  """
+  effectue une relaxation entre des états choisis aléatoirement
+  :return:
+  """
   global DGTable
   for i in range(nb_relax):
     s1x = random.randrange(gridSize[0])
@@ -217,6 +224,19 @@ def random_relax():
 #-----------------------------------------------------------------------------------------------------------
 
 def launch(method, nbRuns, nbticks, rewVal, agentBouge = False, rewardBouge = False, useAllGoalUpdate = False, relaxMode = 'no', show = False):
+  """
+
+  :param method: 'Q' ou 'DG', la méthode à employer
+  :param nbRuns: entier, combien de fois les expériences devront être répétées (pour faire une moyenne)
+  :param nbticks: entier, la durée de l'expérience
+  :param rewVal: flottant, la valeur de la récompense pour le Q learning, 1 en général
+  :param agentBouge: booléen, si la position de départ de l'agent change entre chaque objectif atteint
+  :param rewardBouge: booléen, si la position de l'objectif change entre chaque objectif atteint
+  :param useAllGoalUpdate: booléen si le DG learnign utilise le AllGoalUpdate
+  :param relaxMode: 'fm' floyd warshal, 'rd' : random ou 'no' : aucun
+  :param show: booléen : affiche la DG table ou la Q table sous forme de grille, utilisable à des fins de deboguage uniquement en objectif fixe
+  :return: une liste contenant les ticks de chaque objectif atteint
+  """
   global agentPos
   global rewardPos
   global Qdict
@@ -227,7 +247,7 @@ def launch(method, nbRuns, nbticks, rewVal, agentBouge = False, rewardBouge = Fa
   global choice_tm1
 
 
-  if show == True :
+  if show == True and rewardBouge == False:
     dp = dirtyPlot.dirtyPlot(gridSize)
 
   # experiment related stuff

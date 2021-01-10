@@ -19,40 +19,11 @@ agentStartPos = agentPos
 rewardPos = (5, 5)
 rewardStartPos = rewardPos
 
-baseDGValue = 50
+baseDGValue = 0
 
 probFail = 0.8 #0.8 selon l'énoncé
 
 nb_relax = 100
-
-"""
-#move correspondant plus à ce qu'a fait leslie en retro-ingeneerant son code
-def move(vchoice) :
-  global agentPos
-
-  targetPos = agentPos
-
-  if vchoice == "haut":
-    targetPos = (agentPos[0], agentPos[1] + 1)
-  if vchoice == "bas":
-    targetPos = (agentPos[0], agentPos[1] - 1)
-  if vchoice == "gauche":
-    targetPos = (agentPos[0] - 1, agentPos[1])
-  if vchoice == "droite":
-    targetPos = (agentPos[0] + 1, agentPos[1])
-  if random.random() < probFail:
-    r = random.random()
-    if r < 0.25 :
-      targetPos = (targetPos[0] + 1, targetPos[1])
-    if r >= 0.25 and r < 0.5 :
-      targetPos = (targetPos[0] - 1, targetPos[1])
-    if r >= 0.5 and r < 0.75 :
-      targetPos = (targetPos[0], targetPos[1] + 1)
-    if r >= 0.75 :
-      targetPos = (targetPos[0], targetPos[1] - 1)
-  if targetPos[0] < gridSize[0] and targetPos[1] < gridSize[1] and targetPos[0] >= 0 and targetPos[1] >= 0:
-    agentPos = targetPos
-"""
 
 def move(vchoice) :
   global agentPos
@@ -351,18 +322,25 @@ def launch(method, nbRuns, nbticks, rewVal, agentBouge = False, rewardBouge = Fa
 #--------------------------------------
 
 if __name__ == '__main__':
+  baseDGValue = 0
   nrun = 20
   nbucket = 100
   nticks = 10000
-  rewVal = 1
+  rewVal = 1 #ne change jamais
+  dyna = True
+  alpha = 0.4 #0.9 0.4
+  gamma = 0.995 #0.9 0.995
+  AGA = True #True
+  rel = 'rd' #'rd'
+
   #random.seed(1234)
   print("--------------------------- Q -------------------------")
   #dataQ  = launch("Q", nrun, nticks, rewVal, agentBouge=True, rewardBouge=False)
-  dataQ  = launch("Q", nrun, nticks, rewVal, agentBouge=True, rewardBouge=True)
+  dataQ  = launch("Q", nrun, nticks, rewVal, agentBouge=True, rewardBouge=dyna)
 
   print("--------------------------- DG -------------------------")
   #dataDG = launch("DG", nrun, nticks, rewVal, agentBouge=True, rewardBouge=False, useAllGoalUpdate=False, useRelaxation=False)
-  dataDG = launch("DG", nrun, nticks, rewVal, agentBouge=True, rewardBouge=True, useAllGoalUpdate=True, relaxMode = 'rd') #test de la relaxation
+  dataDG = launch("DG", nrun, nticks, rewVal, agentBouge=True, rewardBouge=dyna, useAllGoalUpdate=AGA, relaxMode = rel) #test de la relaxation
 
   finalQ = []
   finalDG = []
@@ -381,14 +359,15 @@ if __name__ == '__main__':
 
   print("mean Q : " + str(np.mean(finalQ)))
   print("mean DG : " + str(np.mean(finalDG)))
-
+  plt.figure(figsize=(6, 6))
   plt.plot(finalQ, label = 'Q')
   plt.plot(finalDG, label = 'DG')
-  plt.title('performances avec ' + str(nticks) + ' itérations \n gamma = ' + str(gamma) + ', rew = ' + str(rewVal) + ' et proba échec au mouvement = ' +str(probFail) )
+  plt.title('performances avec ' + str(nticks) + ' itérations | dyna = ' + str(dyna) + '\n gamma = ' + str(gamma) + ' | alpha = ' + str(alpha) + ' | proba échec au mouvement = ' +str(probFail) + '\n allGoal : ' + str(AGA) + ' | relax : ' + rel + ' | baseDGval : ' + str(baseDGValue) )
   plt.ylabel('récompenses par tick')
   plt.xlabel('paquet de ' + str(nticks/nbucket) + ' ticks')
   plt.legend()
-  plt.savefig('stdGam' + str(gamma) + 'Rew' + str(rewVal) + 'ProbFail' +str(probFail) +'.png')
+
+  plt.savefig('stdGam' + str(gamma) + 'al' + str(alpha) + 'dyna' + str(dyna) + 'ProbFail' +str(probFail) + 'AG' + str(AGA) + 'rel' + rel + 'BDGV' + str(baseDGValue)+'.png')
   plt.show()
 
 
